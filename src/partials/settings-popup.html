@@ -1,0 +1,287 @@
+<style>
+  .popup {
+    position: fixed;
+    top: 60px;
+    right: 60px;
+    width: 600px;
+    height: 750px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background: #0066ff;
+    color: white;
+    font-weight: bold;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    font-family: "Roboto", sans-serif;
+  }
+
+  .popup-header h3 {
+    margin: 0;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 18px; /* Adjust the font size according to your design preferences */
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .popup-content {
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+
+  label {
+    margin-bottom: 5px;
+    font-family: "Roboto", sans-serif;
+  }
+
+  textarea,
+  input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+  }
+
+  .save-btn {
+    background: #0066ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    align-self: flex-end;
+  }
+</style>
+
+<!-- settingsdiv -->
+<div id="settings-popup" class="popup hidden">
+  <div class="popup-header">
+    <h3>Settings</h3>
+    <button class="close-btn" onclick="closeSettingsPopup()">
+      <i class="fas fa-window-close"></i>
+    </button>
+  </div>
+  <div class="popup-content">
+    <form id="settings-form">
+      <div class="form-group">
+        <label for="token-usage">Token Usage for this map:</label>
+        <label
+          id="token-usage"
+        ></label>
+      </div>
+      <div class="form-group">
+        <label for="child-node-suggestion">Child Node Suggestion Prompt:</label>
+        <textarea
+          id="child-node-suggestion"
+          rows="8"
+          placeholder="Enter child node suggestion prompt."
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label for="discuss-node-prompt">Discuss Node Prompt:</label>
+        <textarea
+          id="discuss-node-prompt"
+          rows="18"
+          placeholder="Enter discuss node prompt"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label for="prefix-prompt">Discuss Prompt Prefix:</label>
+        <textarea
+          id="prefix-prompt"
+          rows="5"
+          placeholder="Enter prompt prefix"
+        ></textarea>
+      </div>
+<!--      <div class="form-group">
+        <label for="prefix-prompt">Restructure Prompt:</label>
+        <textarea
+          id="restructure-prompt"
+          rows="5"
+          placeholder="Enter restructure"
+        ></textarea>
+      </div>-->
+      <div class="form-group">
+        <label for="gpt-engine">GPT Engine:</label>
+        <input id="gpt-engine" type="text" placeholder="Enter GPT engine" />
+      </div>
+	    
+      <div class="form-group">
+        <label for="temperature">Temperature:</label>
+        <input id="temperature" type="text" placeholder="Enter temperature" />
+      </div>
+	    
+      <div class="form-group">
+        <label for="theme">Theme:</label>
+      <select onchange="set_theme(this.value);">
+          <option value="">default</option>
+          <option value="primary">primary</option>
+          <option value="warning">warning</option>
+          <option value="danger">danger</option>
+          <option value="success">success</option>
+          <option value="info">info</option>
+          <option value="greensea" selected="selected">greensea</option>
+          <option value="nephrite">nephrite</option>
+          <option value="belizehole">belizehole</option>
+          <option value="wisteria">wisteria</option>
+          <option value="asphalt">asphalt</option>
+          <option value="orange">orange</option>
+          <option value="pumpkin">pumpkin</option>
+          <option value="pomegranate">pomegranate</option>
+          <option value="clouds">clouds</option>
+          <option value="asbestos">asbestos</option>
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="text/javascript">
+  setupPopSizeListener(750, 600, document.getElementById("settings-popup"));
+  
+  function set_theme(theme_name) {
+    _jm.set_theme(theme_name);
+  }
+
+
+  function getValueOrDefault(obj, key, defaultValue) {
+    if (!obj.hasOwnProperty(key)) {
+      return defaultValue;
+    }
+    return obj[key];
+  }
+
+  function openSettingsPopup() {
+    document.getElementById("settings-popup").classList.remove("hidden");
+  }
+
+  function closeSettingsPopup() {
+    console.log("close");
+    document.getElementById("settings-popup").classList.add("hidden");
+    autoSaveData();
+  }
+  function recordSettings(data) {
+    console.log(data);
+    // Get the values from the form fields
+    data["child-node-suggestion"] = document.getElementById(
+      "child-node-suggestion"
+    ).value;
+    data["discuss-node-prompt"] = document.getElementById(
+      "discuss-node-prompt"
+    ).value;
+    data["prefix-prompt"] = document.getElementById("prefix-prompt").value;
+    //data["restructure-prompt"] = document.getElementById("restructure-prompt").value;
+    data["gpt-engine"] = document.getElementById("gpt-engine").value;
+    data["token-usage"] = document.getElementById("token-usage").textContent;
+    data["temperature"] = document.getElementById("temperature").value;
+    console.log("recordSettings", data);
+  }
+
+  function addTokenUsage(tokens) {
+      value = document.getElementById("token-usage").textContent;
+      if (value == "" || isNaN(parseInt(value))) {
+	  count = 0;
+      } else {
+	  count = parseInt(value);
+      }
+      console.log("addTokenUsage", value, count, tokens, count+tokens);
+      document.getElementById("token-usage").textContent = (count + tokens).toString();
+  }
+  
+  function saveSettings(event) {
+    if (event) event.preventDefault();
+    closeSettingsPopup();
+  }
+
+  // Attach the event listener to the form
+  document
+    .getElementById("settings-form")
+    .addEventListener("submit", saveSettings);
+
+  function load_meta_properties(options) {
+    document.getElementById("token-usage").textContent = getValueOrDefault(
+	options, "token-usage", (0).toString())
+    document.getElementById("discuss-node-prompt").value = getValueOrDefault(
+      options,
+      "discuss-node-prompt",
+      "I am creating a mindmap.  Here is what's currently visible in the mindmap:\n" +
+        "${hyphenated_list}\n" +
+        "I'd like to discuss with you about the '${text_of_node}' node.\n" +
+        "Respond with your thoughts on:\n" +
+        "1. What this node means, both specifically and generally\n" +
+        "2. The relevance of this node, how it contributes individually and holistically\n" +
+        "3. Where it fits in the mindmap (see the indented listed above)\n" +
+        "4. What are some things to consider when adding children, sibling, and parent nodes around it in the mindmap\n" +
+        "5. What are some good questions to ask ChatGPT to get a better understanding of this node?\n" +
+        "6. And finally, just some novel creative ideas to think about in relation to this node.\n" +
+        "When addressing these points, please remember we're talking about the ${text_of_node}' node within the context of the hyphenated mindmap list above."
+    );
+
+    document.getElementById("child-node-suggestion").value = getValueOrDefault(
+      options,
+      "child-node-suggestion",
+      "I am creating a mindmap.  Here is what's currently visible:\n" +
+        "${hyphenated_list}\n" +
+        "I need some ideas for adding at least two child nodes to '${text_of_node}'.\n" +
+        "Provide a list of suggestions, in the same hyphenated format above, that would be ideal children of '${text_of_node}', with no empty lines. The list should be prioritized by relevance and importance.\n" +
+        "Surround the list of suggestions with <embed></embed>\n" +
+        "Do not make suggestions which are redundant to ones already listed above.\n" +
+        "Do not repeat ${text_of_node}' in the list.\n"+
+	"There must be at least two suggestions for the immediate child nodes of '${text_of_node}'.\n"+
+	"Each suggestion must complement, augment, and harmonize with the mindmap listed above.\n"
+    );
+    document.getElementById("prefix-prompt").value = getValueOrDefault(
+      options,
+      "prefix-prompt",
+      "I am creating a mindmap, here's what's currently visible in the mindmap:\n${hyphenated_list}\nI would like to discuss the '${cur_topic}' node.\n\n"
+    );
+
+   /* document.getElementById("restructure-prompt").value = getValueOrDefault(
+      options,
+      "restructure-prompt",
+	"I am creating a mindmap, here's what is currently visible in the mindmap:\n${hyphenated_list}\n"+
+	"Restructure the mindmap listed above into a more cohesive, clear, and impactful mindmap.\n"+
+	    "The restructured mindmap should have many levels, but no less than 3 children and no more than 6 children per item.\n"+
+	    "Use the same hyphenated hierarchical format above, with no empty lines.\n"+
+	    "Ensure that the hierarchical hyphenated list is surrounded by <embed></embed>.\n"+
+	    "Do not include the top level node.\n"
+    );*/
+
+    document.getElementById("gpt-engine").value = getValueOrDefault(
+      options,
+      "gpt-engine",
+      "gpt-3.5-turbo"
+    );
+    document.getElementById("temperature").value = getValueOrDefault(
+      options,
+      "temperature",
+      "0.7"
+    );
+  }
+</script>

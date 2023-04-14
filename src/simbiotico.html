@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>jsMind</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
+      integrity="sha384-l06Plad51xhuxEwX9KBVJsB3YBeDeDhvs7QAa0vF9pUb+i2SA40QpPF55L6Rfrzq"
+      crossorigin="anonymous"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/jsmind/style/jsmind.css"
+      integrity="sha384-1nTEMjWXLLPe1f1aBitnnwTmPw8N71MrZQQBMQn7ua9HnvdBZrPzhT1DMp2h+baG"
+      crossorigin="anonymous"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+      integrity="sha384-/frq1SRXYH/bSyou/HUp/hib7RVN1TawQYja658FEOodR/FQBKVqT9Ol+Oz3Olq5"
+      crossorigin="anonymous"
+    />
+
+    <style type="text/css">
+
+
+                li {
+                    margin-top: 2px;
+                    margin-bottom: 2px;
+                }
+                button {
+                    width: 140px;
+                }
+                select {
+                    width: 140px;
+                }
+         .file_input {
+                    width: 100px;
+                }
+                button.sub {
+                    width: 100px;
+                }
+
+         body {
+      margin: 0; !important
+      padding: 0; !important
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+         }
+    </style>
+<script
+  src="https://unpkg.com/jsmind/es6/jsmind.js"
+  integrity="sha384-Nrz28IvVAkSg8jGmVCMutbaY6H3BHwf4FsqHm6kzj/q0sBUtF+ngWfu8muDwBRRC"
+  crossorigin="anonymous"
+></script>
+
+  </head>
+  <body>
+    @@include('./partials/jsmind_draggable.html')
+    @@include('./partials/utils.html')
+    @@include('./partials/help-popup.html')
+    @@include('./partials/mindmap.html')
+    @@include('./partials/alert-popup.html')
+    @@include('./partials/login-popup.html')
+    @@include('./partials/settings-popup.html')
+    @@include('./partials/chat-popup.html')
+  </body>
+</html>

@@ -1,0 +1,83 @@
+<script>
+
+  class UndoRedoManager {
+      constructor(maxSize) {
+	  this.undoStack = [];
+	  this.redoStack = [];
+	  this.maxSize = maxSize;
+      }
+
+      performAction(state) {
+	  this.undoStack.push(JSON.parse(JSON.stringify(state)));
+
+	  if (this.undoStack.length > this.maxSize) {
+              this.undoStack.shift();
+	  }
+
+	  this.redoStack = [];
+      }
+
+      undo(cur) {
+	  if (this.undoStack.length === 0) {
+              return null;
+	  }
+
+	  var prevState = this.undoStack.pop();
+	  if (this.undoStack.length === 0) {
+	      this.undoStack.push(prevState);
+	  }
+	  if (prevState == cur) {
+	      if (this.undoStack.length < 2) {
+		  return null;
+	      } else {
+		  return undo(cur);
+	      }
+	  }
+	  this.redoStack.push(JSON.parse(JSON.stringify(prevState)));
+	  return prevState;
+      }
+
+      redo() {
+	  if (this.redoStack.length === 0) {
+              return null;
+	  }
+
+	  const nextState = this.redoStack.pop();
+	  this.undoStack.push(JSON.parse(JSON.stringify(nextState)));
+	  return nextState;
+      }
+  }
+
+
+  function createUpdatePopupSize(maxHeight, maxWidth, div) {
+      return function () {
+	  const windowHeight = window.innerHeight;
+	  if (windowHeight < maxHeight) {
+	      div.style.height = (windowHeight * 0.9) + "px"; // Set popup height to 80% of the window height
+	  } else {
+	      div.style.height = maxHeight;
+	  }
+	  const windowWidth = window.innerWidth;
+	  if (windowWidth < maxWidth) {
+	      div.style.width = (windowWidth * 0.9) + "px"; // Set popup height to 80% of the window height
+	  } else {
+	      div.style.width = maxWidth; // Reset the popup height to auto when the window is larger
+	  }
+      };
+  }
+  
+
+  function setupPopSizeListener(maxHeight, maxWidth, popup) {
+      const updatePopupSize = createUpdatePopupSize(maxHeight, maxWidth, popup);
+
+      // Call updatePopupHeight on window resize
+      window.addEventListener("resize", updatePopupSize);
+
+      // Call updatePopupHeight on page load
+      updatePopupSize();
+            
+  }
+  
+  const undoRedoManager = new UndoRedoManager(20);
+
+ </script>

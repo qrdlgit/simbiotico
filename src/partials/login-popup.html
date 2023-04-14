@@ -1,0 +1,90 @@
+<!-- logindiv -->
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    text-align: center;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  button {
+    background-color: #4caf50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  button:hover {
+    opacity: 0.8;
+  }
+</style>
+<div id="api-key-modal" class="modal">
+  <div class="modal-content">
+    <h2>Enter GPT API Key</h2>
+    <p>Please enter your API key to continue.  This is a browser side application only, no server except for OpenAI.<br/>
+      The key is not persisted in browser storage and only used when sending to OpenAI REST api. <br />
+      Token usage is relatively light and you can find a total usage count via settings (gear) icon. <br />
+      The source code is not minified and should be easily reviewable via developer tools, your filesystem, and/or the github repo.<br />
+      Make sure to follow <a href=http://twitter.com/QRDL>http://twitter.com/QRDL</a> for information and updates.<br />
+    <input type="text" id="api-key-input" style="-webkit-text-security: disc;">
+    <button id="submit-api-key">Submit</button>
+  </div>
+</div>
+
+<script type="text/javascript">
+  let API_KEY = "";
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const apiKeyModal = document.getElementById("api-key-modal");
+    const submitApiKeyButton = document.getElementById("submit-api-key");
+
+    function showApiKeyModal() {
+      apiKeyModal.style.display = "block";
+    }
+
+      function hideApiKeyModal() {
+      document.getElementById("api-key-input").value = "";
+      apiKeyModal.style.display = "none";
+    }
+
+    submitApiKeyButton.addEventListener("click", () => {
+      const apiKeyInput = document.getElementById("api-key-input");
+      API_KEY = apiKeyInput.value.trim();  //This is the only place we 'store' the key
+      const apiKey = API_KEY;
+      if (apiKey) {
+        hideApiKeyModal();
+      } else {
+        showCustomAlert("Please enter a valid API key.");
+      }
+    });
+
+    // Show the modal dialog on page load.
+    showApiKeyModal();
+  });
+</script>

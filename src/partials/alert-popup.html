@@ -1,0 +1,61 @@
+<style>
+  .hidden {
+    display: none;
+  }
+
+  .custom-alert {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+  }
+
+  .custom-alert-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .custom-alert-message {
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .custom-alert-close {
+    background-color: #0066ff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+</style>
+
+<div id="custom-alert" class="custom-alert hidden">
+  <div class="custom-alert-content">
+    <span id = "custom-alert-message" class="custom-alert-message"></span>
+    <button class="custom-alert-close" onclick="closeCustomAlert()">OK</button>
+  </div>
+</div>
+
+<script type="text/javascript">
+  function showCustomAlert(message) {
+    const customAlert = document.getElementById("custom-alert");
+    const customAlertMessage = document.getElementById("custom-alert-message");
+    customAlertMessage.textContent = message;
+    customAlert.classList.remove("hidden");
+  }
+
+  function closeCustomAlert() {
+    const customAlert = document.getElementById("custom-alert");
+    customAlert.classList.add("hidden");
+  }
+</script>

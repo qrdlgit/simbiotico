@@ -1,0 +1,126 @@
+<style>
+  .help-popup {
+    position: fixed;
+    top: 60px;
+    right: 60px;
+    width: 600px;
+    max-height: 750px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .help-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background: #0066ff;
+    color: white;
+    font-weight: bold;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px; 
+    font-family: "Roboto", sans-serif;
+   max-height: 35px;
+  }
+
+  .help-popup-header h3 {
+    margin: 0;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 18px; /* Adjust the font size according to your design preferences */
+  }
+
+  .help-close-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0;
+    margin: 0;
+    max-width: 30px;
+    align: right;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .help-popup-content {
+    padding: 20px;
+    overflow-y: auto;
+    font-family: "Roboto", sans-serif;
+  }
+
+</style>
+
+<div id="help-popup" class="help-popup hidden">
+  <div class="help-popup-header">
+    <h3>Help</h3>
+    <button class="help-close-btn" onclick="closeHelpPopup()">
+      <i class="fas fa-window-close"></i>
+    </button>
+  </div>
+
+  <div class="help-popup-content">
+    Creating a new map and setting the map name:
+    <ul>
+      <li> Change the URL to file://<path>/simbiotica.html?map=[map_name] </li>
+      <li> This format was chosen for easy bookmarking in your web browser </li>
+    </ul>
+    Security:
+    <ul>
+      <li> The security of your OpenAI API key is important. Efforts have been made with this app to ensure its safety.</li>
+      <li> This code is open source and not minified, making it easily reviewable.</li>
+      <li> Your API key is not stored locally in any persistent storage and must be entered each time you load this page.</li>
+      <li> All imports have SRI hashes, and external code has been reviewed for potential issues.</li>
+      <li> This app is fairly lightweight in its usage, but make sure you have a spending limit on your OpenAI account. You can see token count usage in the settings page.</li>
+    </ul>
+    Interacting with the mindmap:
+    <ul>
+      <li> Mouse click to select a node, double-click to edit, press Enter to save </li>
+      <li> You can either click and drag your mouse to pan the mindmap, or use mousewheel / two-finger guestures on touchpad to scroll the mindmap vertically or horizontally if it's larger in those dimensions (respectively) to the screen. </li>
+      <li> Mouse drag nodes to move to another node</li>
+      <li> Mouse click small circle to expand/collapse</li>
+      <li> Press Enter to create a sibling node</li>
+      <li> Press Ctrl-Enter to create a child node</li>
+      <li> Press Delete to delete a node</li>
+    </ul>
+    Note that maps are autosaved via the IndexedDB API, browser-based storage that is only accessible by the same origin. In other words, your maps can only be accessed from where this page is being served from. Be careful when using other browser-based applications you save/serve from the same location, as they can access the IndexDB API storage. Use only code that is openly reviewable, open source, or from a trusted entity.
+    <br />
+    <br />
+    Button bar:
+    <ul>
+      <li> <i class="fas fa-download"></i> - Make a backup of the map. As mentioned above, the map is already stored in your browser, but this can be used for transferring between computers.</li>
+      <li> <i class="fas fa-upload"></i> - Load a backup of the map. The map must be empty to ensure you don't accidentally overwrite another map.</li>
+      <li> <i class="fas fa-share-alt"></i> - Get suggestions from GPT-3.5, which is what this is all about!  You can configure how this is done in settings.</li>
+      <li> <i class="fas fa-compress-alt"></i> - Collapse all</li>
+      <li> <i class="fas fa-expand-alt"></i> - Expand all</li>
+      <li> <i class="fas fa-search-plus"></i> - Zoom in</li>      
+      <li> <i class="fas fa-search-minus"></i> - Zoom out</li>
+      <li> <i class="fas fa-comments"></i> - Engage in a deeper discussion with GPT-3.5 about a particular node.  The first time you chat about a node both the mindmap and a series of questions will be sent to GPT API.  Subsequently, all messages will be prefixed with the mindmap only.  You can configure these prompts in settings.</li>
+      <li> <i class="fas fa-rotate-left"></i> - Undo, may have to click twice.  This is a bit hard to use right now, working on it.</li>
+      <li> <i class="fas fa-rotate-right"></i> - Redo, may have to click twice</li>
+      <li> <i class="fas fa-gear"></i> - Settings. You can change the prompts used to get suggestions and discuss nodes. Make sure you review them carefully before making changes. Backing up a copy of the prompt for reverting is probably a good idea.</li>
+    </ul>
+      </div>
+  </div>
+    </ul>
+    
+  </div>
+</div>
+
+<script type="text/javascript">
+  setupPopSizeListener(750, 600, document.getElementById("help-popup"));
+  
+  function openHelpPopup() {
+    document.getElementById("help-popup").classList.remove("hidden");
+  }
+
+  function closeHelpPopup() {
+    document.getElementById("help-popup").classList.add("hidden");
+  }
+
+</script>
