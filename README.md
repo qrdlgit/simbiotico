@@ -1,5 +1,5 @@
 # simbiotico
-GPT / Human collaboration mindmap tool using OpenAI ChatGPT API.  Brainstorm with GPT4 to create comprehensive mindmaps.  Not only use GPT4 to provide suggestions, but also chat with it in depth and extensively about your mindmap.  Ask ChatGPT questions, and have ChatGPT ask you questions about it.
+GPT / Human collaboration mindmap tool using OpenAI ChatGPT API.  Brainstorm with ChatGPT to create comprehensive mindmaps.  Not only use ChatGPT to provide suggestions, but also chat with it in depth and extensively about your mindmap.  Ask ChatGPT questions, and have ChatGPT ask you questions about it.
 
 To use, download the RAW [html file]([https://github.com/qrdlgit/simbiotico/blob/main/dist/simbiotico.html](https://raw.githubusercontent.com/qrdlgit/simbiotico/main/dist/simbiotico.html) onto your local machine and run it in your browser as a local file.  This format was chosen to guarantee that your API key never leaves your computer except to communicate with the OpenAI API server.
 
