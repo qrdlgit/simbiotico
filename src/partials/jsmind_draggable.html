@@ -13,8 +13,10 @@
 
   const jm = jsMind;
   const $ = jm.$;
-
+  
   const clear_selection =
+	console.log("clear_selection vars", jm.$);
+
 	'getSelection' in $.w
         ? function () {
 	    $.w.getSelection().removeAllRanges();

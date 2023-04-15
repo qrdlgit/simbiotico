@@ -49,584 +49,12 @@
          }
     </style>
 
-    <script src="https://unpkg.com/jsmind@0.5.4/js/jsmind.js" integrity="sha384-R5+m5beLoKFGYYfHYhJjZOFuYIfT3HUmn/8DwFvhVikHnGKsaBes0K45Zme67izm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/jsmind-simbiotico@0.5.6/js/jsmind.js" integrity="sha384-R5+m5beLoKFGYYfHYhJjZOFuYIfT3HUmn/8DwFvhVikHnGKsaBes0K45Zme67izm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/jsmind-simbiotico@0.5.6/js/jsmind.draggable-node.js" integrity="sha384-GFQFZXgSIVm6wgUddmRKVIMyPAd+6Bk2TuUXnwb6U0PUMThttsKrAET9K/JawGTN" crossorigin="anonymous"></script>
     
 
   </head>
   <body>
-    <script>
-  /**
- * @license BSD
- * @copyright 2014-2023 hizzgdev@163.com
- *
- * Project Home:
- *   https://github.com/hizzgdev/jsmind/
- */
-
-  if (!jsMind) {
-      throw new Error('jsMind is not defined');
-  }
-
-  const jm = jsMind;
-  const $ = jm.$;
-
-  const clear_selection =
-	'getSelection' in $.w
-        ? function () {
-	    $.w.getSelection().removeAllRanges();
-	}
-        : function () {
-	    $.d.selection.empty();
-	};
-
-  const options = {
-      line_width: 5,
-      lookup_delay: 500,
-      lookup_interval: 80,
-  };
-
-  class DraggableNode {
-      constructor(jm) {
-	  this.jm = jm;
-	  this.e_canvas = null;
-	  this.canvas_ctx = null;
-	  this.shadow = null;
-	  this.shadow_w = 0;
-	  this.shadow_h = 0;
-	  this.active_node = null;
-	  this.target_node = null;
-	  this.target_direct = null;
-	  this.client_w = 0;
-	  this.client_h = 0;
-	  this.offset_x = 0;
-	  this.offset_y = 0;
-	  this.hlookup_delay = 0;
-	  this.hlookup_timer = 0;
-	  this.capture = false;
-	  this.moved = false;
-	  this.canvas_draggable = this.jm.get_view_draggable();
-      }
-      init() {
-	  this._create_canvas();
-	  this._create_shadow();
-	  this._event_bind();
-      }
-      resize() {
-	  this.jm.view.e_nodes.appendChild(this.shadow);
-	  this.e_canvas.width = this.jm.view.size.w;
-	  this.e_canvas.height = this.jm.view.size.h;
-      }
-      _create_canvas() {
-	  var c = $.c('canvas');
-	  this.jm.view.e_panel.appendChild(c);
-	  var ctx = c.getContext('2d');
-	  this.e_canvas = c;
-	  this.canvas_ctx = ctx;
-      }
-      _create_shadow() {
-	  var s = $.c('jmnode');
-	  s.style.visibility = 'hidden';
-	  s.style.zIndex = '3';
-	  s.style.cursor = 'move';
-	  s.style.opacity = '0.7';
-	  this.shadow = s;
-      }
-      reset_shadow(el) {
-	  var s = this.shadow.style;
-	  this.shadow.innerHTML = el.innerHTML;
-	  s.left = el.style.left;
-	  s.top = el.style.top;
-	  s.width = el.style.width;
-	  s.height = el.style.height;
-	  s.backgroundImage = el.style.backgroundImage;
-	  s.backgroundSize = el.style.backgroundSize;
-	  s.transform = el.style.transform;
-	  this.shadow_w = this.shadow.clientWidth;
-	  this.shadow_h = this.shadow.clientHeight;
-      }
-      show_shadow() {
-	  if (!this.moved) {
-	      this.shadow.style.visibility = 'visible';
-	  }
-      }
-      hide_shadow() {
-	  this.shadow.style.visibility = 'hidden';
-      }
-      _magnet_shadow(node) {
-	  if (!!node) {
-	      this.canvas_ctx.lineWidth = options.line_width;
-	      this.canvas_ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-	      this.canvas_ctx.lineCap = 'round';
-	      this._clear_lines();
-	      this._canvas_lineto(node.sp.x, node.sp.y, node.np.x, node.np.y);
-	  }
-      }
-      _clear_lines() {
-	  this.canvas_ctx.clearRect(0, 0, this.jm.view.size.w, this.jm.view.size.h);
-      }
-      _canvas_lineto(x1, y1, x2, y2) {
-	  this.canvas_ctx.beginPath();
-	  this.canvas_ctx.moveTo(x1, y1);
-	  this.canvas_ctx.lineTo(x2, y2);
-	  this.canvas_ctx.stroke();
-      }
-      _lookup_close_node() {
-	  var root = this.jm.get_root();
-	  var root_location = root.get_location();
-	  var root_size = root.get_size();
-	  var root_x = root_location.x + root_size.w / 2;
-
-	  var sw = this.shadow_w;
-	  var sh = this.shadow_h;
-	  var sx = this.shadow.offsetLeft;
-	  var sy = this.shadow.offsetTop;
-
-	  var ns, nl;
-
-	  var direct = sx + sw / 2 >= root_x ? jsMind.direction.right : jsMind.direction.left;
-	  var nodes = this.jm.mind.nodes;
-	  var node = null;
-	  var layout = this.jm.layout;
-	  var min_distance = Number.MAX_VALUE;
-	  var distance = 0;
-	  var closest_node = null;
-	  var closest_p = null;
-	  var shadow_p = null;
-	  for (var nodeid in nodes) {
-	      var np, sp;
-	      node = nodes[nodeid];
-	      if (node.isroot || node.direction == direct) {
-		  if (node.id == this.active_node.id) {
-		      continue;
-		  }
-		  if (!layout.is_visible(node)) {
-		      continue;
-		  }
-		  ns = node.get_size();
-		  nl = node.get_location();
-		  if (direct == jsMind.direction.right) {
-		      if (sx - nl.x - ns.w <= 0) {
-			  continue;
-		      }
-		      distance = Math.abs(sx - nl.x - ns.w) + Math.abs(sy + sh / 2 - nl.y - ns.h / 2);
-		      np = { x: nl.x + ns.w - options.line_width, y: nl.y + ns.h / 2 };
-		      sp = { x: sx + options.line_width, y: sy + sh / 2 };
-		  } else {
-		      if (nl.x - sx - sw <= 0) {
-			  continue;
-		      }
-		      distance = Math.abs(sx + sw - nl.x) + Math.abs(sy + sh / 2 - nl.y - ns.h / 2);
-		      np = { x: nl.x + options.line_width, y: nl.y + ns.h / 2 };
-		      sp = { x: sx + sw - options.line_width, y: sy + sh / 2 };
-		  }
-		  if (distance < min_distance) {
-		      closest_node = node;
-		      closest_p = np;
-		      shadow_p = sp;
-		      min_distance = distance;
-		  }
-	      }
-	  }
-	  var result_node = null;
-	  if (!!closest_node) {
-	      result_node = {
-		  node: closest_node,
-		  direction: direct,
-		  sp: shadow_p,
-		  np: closest_p,
-	      };
-	  }
-	  return result_node;
-      }
-      lookup_close_node() {
-	  var node_data = this._lookup_close_node();
-	  if (!!node_data) {
-	      this._magnet_shadow(node_data);
-	      this.target_node = node_data.node;
-	      this.target_direct = node_data.direction;
-	  }
-      }
-      _event_bind() {
-	  var jd = this;
-	  var container = this.jm.view.container;
-	  $.on(container, 'mousedown', function (e) {
-	      var evt = e || event;
-	      jd.dragstart.call(jd, evt);
-	  });
-	  $.on(container, 'mousemove', function (e) {
-	      var evt = e || event;
-	      jd.drag.call(jd, evt);
-	  });
-	  $.on(container, 'mouseup', function (e) {
-	      var evt = e || event;
-	      jd.dragend.call(jd, evt);
-	  });
-	  $.on(container, 'touchstart', function (e) {
-	      var evt = e || event;
-	      jd.dragstart.call(jd, evt);
-	  });
-	  $.on(container, 'touchmove', function (e) {
-	      var evt = e || event;
-	      jd.drag.call(jd, evt);
-	  });
-	  $.on(container, 'touchend', function (e) {
-	      var evt = e || event;
-	      jd.dragend.call(jd, evt);
-	  });
-      }
-      dragstart(e) {
-	  if (!this.jm.get_editable()) {
-	      return;
-	  }
-	  if (this.capture) {
-	      return;
-	  }
-	  this.active_node = null;
-	  this.view_draggable = this.jm.get_view_draggable();
-
-	  var jview = this.jm.view;
-	  var el = e.target || event.srcElement;
-	  if (el.tagName.toLowerCase() != 'jmnode') {
-	      return;
-	  }
-	  if (this.view_draggable) {
-	      this.jm.disable_view_draggable();
-	  }
-	  var nodeid = jview.get_binded_nodeid(el);
-	  if (!!nodeid) {
-	      var node = this.jm.get_node(nodeid);
-	      if (!node.isroot) {
-		  this.reset_shadow(el);
-		  this.active_node = node;
-		  this.offset_x =
-		      (e.clientX || e.touches[0].clientX) / jview.actualZoom - el.offsetLeft;
-		  this.offset_y =
-		      (e.clientY || e.touches[0].clientY) / jview.actualZoom - el.offsetTop;
-		  this.client_hw = Math.floor(el.clientWidth / 2);
-		  this.client_hh = Math.floor(el.clientHeight / 2);
-		  if (this.hlookup_delay != 0) {
-		      $.w.clearTimeout(this.hlookup_delay);
-		  }
-		  if (this.hlookup_timer != 0) {
-		      $.w.clearInterval(this.hlookup_timer);
-		  }
-		  var jd = this;
-		  this.hlookup_delay = $.w.setTimeout(function () {
-		      jd.hlookup_delay = 0;
-		      jd.hlookup_timer = $.w.setInterval(function () {
-			  jd.lookup_close_node.call(jd);
-		      }, options.lookup_interval);
-		  }, options.lookup_delay);
-		  this.capture = true;
-	      }
-	  }
-      }
-      drag(e) {
-	  if (!this.jm.get_editable()) {
-	      return;
-	  }
-	  if (this.capture) {
-	      e.preventDefault();
-	      this.show_shadow();
-	      this.moved = true;
-	      clear_selection();
-	      var jview = this.jm.view;
-	      var px = (e.clientX || e.touches[0].clientX) / jview.actualZoom - this.offset_x;
-	      var py = (e.clientY || e.touches[0].clientY) / jview.actualZoom - this.offset_y;
-	      this.shadow.style.left = px + 'px';
-	      this.shadow.style.top = py + 'px';
-	      clear_selection();
-	  }
-      }
-      dragend(e) {
-	  if (!this.jm.get_editable()) {
-	      return;
-	  }
-	  if (this.view_draggable) {
-	      this.jm.enable_view_draggable();
-	  }
-	  if (this.capture) {
-	      if (this.hlookup_delay != 0) {
-		  $.w.clearTimeout(this.hlookup_delay);
-		  this.hlookup_delay = 0;
-		  this._clear_lines();
-	      }
-	      if (this.hlookup_timer != 0) {
-		  $.w.clearInterval(this.hlookup_timer);
-		  this.hlookup_timer = 0;
-		  this._clear_lines();
-	      }
-	      if (this.moved) {
-		  var src_node = this.active_node;
-		  var target_node = this.target_node;
-		  var target_direct = this.target_direct;
-		  this.move_node(src_node, target_node, target_direct);
-	      }
-	      this.hide_shadow();
-	  }
-	  this.moved = false;
-	  this.capture = false;
-      }
-      move_node(src_node, target_node, target_direct) {
-	  var shadow_h = this.shadow.offsetTop;
-	  if (!!target_node && !!src_node && !jsMind.node.inherited(src_node, target_node)) {
-	      // lookup before_node
-	      var sibling_nodes = target_node.children;
-	      var sc = sibling_nodes.length;
-	      var node = null;
-	      var delta_y = Number.MAX_VALUE;
-	      var node_before = null;
-	      var beforeid = '_last_';
-	      while (sc--) {
-		  node = sibling_nodes[sc];
-		  if (node.direction == target_direct && node.id != src_node.id) {
-		      var dy = node.get_location().y - shadow_h;
-		      if (dy > 0 && dy < delta_y) {
-			  delta_y = dy;
-			  node_before = node;
-			  beforeid = '_first_';
-		      }
-		  }
-	      }
-	      if (!!node_before) {
-		  beforeid = node_before.id;
-	      }
-	      this.jm.move_node(src_node.id, beforeid, target_node.id, target_direct);
-	  }
-	  this.active_node = null;
-	  this.target_node = null;
-	  this.target_direct = null;
-      }
-      jm_event_handle(type, data) {
-	  if (type === jsMind.event_type.resize) {
-	      this.resize();
-	  }
-      }
-  }
-
-  var draggable_plugin = new jm.plugin('draggable_node', function (jm) {
-      var jd = new DraggableNode(jm);
-      jd.init();
-      jm.add_event_listener(function (type, data) {
-	  jd.jm_event_handle.call(jd, type, data);
-      });
-  });
-
-  jsMind.register_plugin(draggable_plugin);
-  
-</script>
-
-    <script>
-
-  class UndoRedoManager {
-      constructor(maxSize) {
-	  this.undoStack = [];
-	  this.redoStack = [];
-	  this.maxSize = maxSize;
-      }
-
-      performAction(state) {
-	  this.undoStack.push(JSON.parse(JSON.stringify(state)));
-
-	  if (this.undoStack.length > this.maxSize) {
-              this.undoStack.shift();
-	  }
-
-	  this.redoStack = [];
-      }
-
-      undo(cur) {
-	  if (this.undoStack.length === 0) {
-              return null;
-	  }
-
-	  var prevState = this.undoStack.pop();
-	  if (this.undoStack.length === 0) {
-	      this.undoStack.push(prevState);
-	  }
-	  if (prevState == cur) {
-	      if (this.undoStack.length < 2) {
-		  return null;
-	      } else {
-		  return undo(cur);
-	      }
-	  }
-	  this.redoStack.push(JSON.parse(JSON.stringify(prevState)));
-	  return prevState;
-      }
-
-      redo() {
-	  if (this.redoStack.length === 0) {
-              return null;
-	  }
-
-	  const nextState = this.redoStack.pop();
-	  this.undoStack.push(JSON.parse(JSON.stringify(nextState)));
-	  return nextState;
-      }
-  }
-
-
-  function createUpdatePopupSize(maxHeight, maxWidth, div) {
-      return function () {
-	  const windowHeight = window.innerHeight;
-	  if (windowHeight < maxHeight) {
-	      div.style.height = (windowHeight * 0.9) + "px"; // Set popup height to 80% of the window height
-	  } else {
-	      div.style.height = maxHeight;
-	  }
-	  const windowWidth = window.innerWidth;
-	  if (windowWidth < maxWidth) {
-	      div.style.width = (windowWidth * 0.9) + "px"; // Set popup height to 80% of the window height
-	  } else {
-	      div.style.width = maxWidth; // Reset the popup height to auto when the window is larger
-	  }
-      };
-  }
-  
-
-  function setupPopSizeListener(maxHeight, maxWidth, popup) {
-      const updatePopupSize = createUpdatePopupSize(maxHeight, maxWidth, popup);
-
-      // Call updatePopupHeight on window resize
-      window.addEventListener("resize", updatePopupSize);
-
-      // Call updatePopupHeight on page load
-      updatePopupSize();
-            
-  }
-  
-  const undoRedoManager = new UndoRedoManager(20);
-
- </script>
-
-    <style>
-  .help-popup {
-    position: fixed;
-    top: 60px;
-    right: 60px;
-    width: 600px;
-    max-height: 750px;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .help-popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px;
-    background: #0066ff;
-    color: white;
-    font-weight: bold;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px; 
-    font-family: "Roboto", sans-serif;
-   max-height: 35px;
-  }
-
-  .help-popup-header h3 {
-    margin: 0;
-    font-family: "Roboto", sans-serif;
-    font-weight: 500;
-    font-size: 18px; /* Adjust the font size according to your design preferences */
-  }
-
-  .help-close-btn {
-    background: transparent;
-    border: none;
-    color: white;
-    padding: 0;
-    margin: 0;
-    max-width: 30px;
-    align: right;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-  .help-popup-content {
-    padding: 20px;
-    overflow-y: auto;
-    font-family: "Roboto", sans-serif;
-  }
-
-</style>
-
-<div id="help-popup" class="help-popup hidden">
-  <div class="help-popup-header">
-    <h3>Help</h3>
-    <button class="help-close-btn" onclick="closeHelpPopup()">
-      <i class="fas fa-window-close"></i>
-    </button>
-  </div>
-
-  <div class="help-popup-content">
-    Creating a new map and setting the map name:
-    <ul>
-      <li> Change the URL to file://<path>/simbiotica.html?map=[map_name] </li>
-      <li> This format was chosen for easy bookmarking in your web browser </li>
-    </ul>
-    Security:
-    <ul>
-      <li> The security of your OpenAI API key is important. Efforts have been made with this app to ensure its safety.</li>
-      <li> This code is open source and not minified, making it easily reviewable.</li>
-      <li> Your API key is not stored locally in any persistent storage and must be entered each time you load this page.</li>
-      <li> All imports have SRI hashes, and external code has been reviewed for potential issues.</li>
-      <li> This app is fairly lightweight in its usage, but make sure you have a spending limit on your OpenAI account. You can see token count usage in the settings page.</li>
-    </ul>
-    Interacting with the mindmap:
-    <ul>
-      <li> Mouse click to select a node, double-click to edit, press Enter to save </li>
-      <li> You can either click and drag your mouse to pan the mindmap, or use mousewheel / two-finger guestures on touchpad to scroll the mindmap vertically or horizontally if it's larger in those dimensions (respectively) to the screen. </li>
-      <li> Mouse drag nodes to move to another node</li>
-      <li> Mouse click small circle to expand/collapse</li>
-      <li> Press Enter to create a sibling node</li>
-      <li> Press Ctrl-Enter to create a child node</li>
-      <li> Press Delete to delete a node</li>
-    </ul>
-    Note that maps are autosaved via the IndexedDB API, browser-based storage that is only accessible by the same origin. In other words, your maps can only be accessed from where this page is being served from. Be careful when using other browser-based applications you save/serve from the same location, as they can access the IndexDB API storage. Use only code that is openly reviewable, open source, or from a trusted entity.
-    <br />
-    <br />
-    Button bar:
-    <ul>
-      <li> <i class="fas fa-download"></i> - Make a backup of the map. As mentioned above, the map is already stored in your browser, but this can be used for transferring between computers.</li>
-      <li> <i class="fas fa-upload"></i> - Load a backup of the map. The map must be empty to ensure you don't accidentally overwrite another map.</li>
-      <li> <i class="fas fa-share-alt"></i> - Get suggestions from GPT-3.5, which is what this is all about!  You can configure how this is done in settings.</li>
-      <li> <i class="fas fa-compress-alt"></i> - Collapse all</li>
-      <li> <i class="fas fa-expand-alt"></i> - Expand all</li>
-      <li> <i class="fas fa-search-plus"></i> - Zoom in</li>      
-      <li> <i class="fas fa-search-minus"></i> - Zoom out</li>
-      <li> <i class="fas fa-comments"></i> - Engage in a deeper discussion with GPT-3.5 about a particular node.  The first time you chat about a node both the mindmap and a series of questions will be sent to GPT API.  Subsequently, all messages will be prefixed with the mindmap only.  You can configure these prompts in settings.</li>
-      <li> <i class="fas fa-rotate-left"></i> - Undo, may have to click twice.  This is a bit hard to use right now, working on it.</li>
-      <li> <i class="fas fa-rotate-right"></i> - Redo, may have to click twice</li>
-      <li> <i class="fas fa-gear"></i> - Settings. You can change the prompts used to get suggestions and discuss nodes. Make sure you review them carefully before making changes. Backing up a copy of the prompt for reverting is probably a good idea.</li>
-    </ul>
-      </div>
-  </div>
-    </ul>
-    
-  </div>
-</div>
-
-<script type="text/javascript">
-  setupPopSizeListener(750, 600, document.getElementById("help-popup"));
-  
-  function openHelpPopup() {
-    document.getElementById("help-popup").classList.remove("hidden");
-  }
-
-  function closeHelpPopup() {
-    document.getElementById("help-popup").classList.add("hidden");
-  }
-
-</script>
-
     <style>
   #main_container {
     width: 200px;
@@ -1323,6 +751,217 @@
   }
 
   open_empty();
+</script>
+
+    <script>
+
+  class UndoRedoManager {
+      constructor(maxSize) {
+	  this.undoStack = [];
+	  this.redoStack = [];
+	  this.maxSize = maxSize;
+      }
+
+      performAction(state) {
+	  this.undoStack.push(JSON.parse(JSON.stringify(state)));
+
+	  if (this.undoStack.length > this.maxSize) {
+              this.undoStack.shift();
+	  }
+
+	  this.redoStack = [];
+      }
+
+      undo(cur) {
+	  if (this.undoStack.length === 0) {
+              return null;
+	  }
+
+	  var prevState = this.undoStack.pop();
+	  if (this.undoStack.length === 0) {
+	      this.undoStack.push(prevState);
+	  }
+	  if (prevState == cur) {
+	      if (this.undoStack.length < 2) {
+		  return null;
+	      } else {
+		  return undo(cur);
+	      }
+	  }
+	  this.redoStack.push(JSON.parse(JSON.stringify(prevState)));
+	  return prevState;
+      }
+
+      redo() {
+	  if (this.redoStack.length === 0) {
+              return null;
+	  }
+
+	  const nextState = this.redoStack.pop();
+	  this.undoStack.push(JSON.parse(JSON.stringify(nextState)));
+	  return nextState;
+      }
+  }
+
+
+  function createUpdatePopupSize(maxHeight, maxWidth, div) {
+      return function () {
+	  const windowHeight = window.innerHeight;
+	  if (windowHeight < maxHeight) {
+	      div.style.height = (windowHeight * 0.9) + "px"; // Set popup height to 80% of the window height
+	  } else {
+	      div.style.height = maxHeight;
+	  }
+	  const windowWidth = window.innerWidth;
+	  if (windowWidth < maxWidth) {
+	      div.style.width = (windowWidth * 0.9) + "px"; // Set popup height to 80% of the window height
+	  } else {
+	      div.style.width = maxWidth; // Reset the popup height to auto when the window is larger
+	  }
+      };
+  }
+  
+
+  function setupPopSizeListener(maxHeight, maxWidth, popup) {
+      const updatePopupSize = createUpdatePopupSize(maxHeight, maxWidth, popup);
+
+      // Call updatePopupHeight on window resize
+      window.addEventListener("resize", updatePopupSize);
+
+      // Call updatePopupHeight on page load
+      updatePopupSize();
+            
+  }
+  
+  const undoRedoManager = new UndoRedoManager(20);
+
+ </script>
+
+    <style>
+  .help-popup {
+    position: fixed;
+    top: 60px;
+    right: 60px;
+    width: 600px;
+    max-height: 750px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .help-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background: #0066ff;
+    color: white;
+    font-weight: bold;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px; 
+    font-family: "Roboto", sans-serif;
+   max-height: 35px;
+  }
+
+  .help-popup-header h3 {
+    margin: 0;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 18px; /* Adjust the font size according to your design preferences */
+  }
+
+  .help-close-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0;
+    margin: 0;
+    max-width: 30px;
+    align: right;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .help-popup-content {
+    padding: 20px;
+    overflow-y: auto;
+    font-family: "Roboto", sans-serif;
+  }
+
+</style>
+
+<div id="help-popup" class="help-popup hidden">
+  <div class="help-popup-header">
+    <h3>Help</h3>
+    <button class="help-close-btn" onclick="closeHelpPopup()">
+      <i class="fas fa-window-close"></i>
+    </button>
+  </div>
+
+  <div class="help-popup-content">
+    Creating a new map and setting the map name:
+    <ul>
+      <li> Change the URL to file://<path>/simbiotica.html?map=[map_name] </li>
+      <li> This format was chosen for easy bookmarking in your web browser </li>
+    </ul>
+    Security:
+    <ul>
+      <li> The security of your OpenAI API key is important. Efforts have been made with this app to ensure its safety.</li>
+      <li> This code is open source and not minified, making it easily reviewable.</li>
+      <li> Your API key is not stored locally in any persistent storage and must be entered each time you load this page.</li>
+      <li> All imports have SRI hashes, and external code has been reviewed for potential issues.</li>
+      <li> This app is fairly lightweight in its usage, but make sure you have a spending limit on your OpenAI account. You can see token count usage in the settings page.</li>
+    </ul>
+    Interacting with the mindmap:
+    <ul>
+      <li> Mouse click to select a node, double-click to edit, press Enter to save </li>
+      <li> You can either click and drag your mouse to pan the mindmap, or use mousewheel / two-finger guestures on touchpad to scroll the mindmap vertically or horizontally if it's larger in those dimensions (respectively) to the screen. </li>
+      <li> Mouse drag nodes to move to another node</li>
+      <li> Mouse click small circle to expand/collapse</li>
+      <li> Press Enter to create a sibling node</li>
+      <li> Press Ctrl-Enter to create a child node</li>
+      <li> Press Delete to delete a node</li>
+    </ul>
+    Note that maps are autosaved via the IndexedDB API, browser-based storage that is only accessible by the same origin. In other words, your maps can only be accessed from where this page is being served from. Be careful when using other browser-based applications you save/serve from the same location, as they can access the IndexDB API storage. Use only code that is openly reviewable, open source, or from a trusted entity.
+    <br />
+    <br />
+    Button bar:
+    <ul>
+      <li> <i class="fas fa-download"></i> - Make a backup of the map. As mentioned above, the map is already stored in your browser, but this can be used for transferring between computers.</li>
+      <li> <i class="fas fa-upload"></i> - Load a backup of the map. The map must be empty to ensure you don't accidentally overwrite another map.</li>
+      <li> <i class="fas fa-share-alt"></i> - Get suggestions from GPT-3.5, which is what this is all about!  You can configure how this is done in settings.</li>
+      <li> <i class="fas fa-compress-alt"></i> - Collapse all</li>
+      <li> <i class="fas fa-expand-alt"></i> - Expand all</li>
+      <li> <i class="fas fa-search-plus"></i> - Zoom in</li>      
+      <li> <i class="fas fa-search-minus"></i> - Zoom out</li>
+      <li> <i class="fas fa-comments"></i> - Engage in a deeper discussion with GPT-3.5 about a particular node.  The first time you chat about a node both the mindmap and a series of questions will be sent to GPT API.  Subsequently, all messages will be prefixed with the mindmap only.  You can configure these prompts in settings.</li>
+      <li> <i class="fas fa-rotate-left"></i> - Undo, may have to click twice.  This is a bit hard to use right now, working on it.</li>
+      <li> <i class="fas fa-rotate-right"></i> - Redo, may have to click twice</li>
+      <li> <i class="fas fa-gear"></i> - Settings. You can change the prompts used to get suggestions and discuss nodes. Make sure you review them carefully before making changes. Backing up a copy of the prompt for reverting is probably a good idea.</li>
+    </ul>
+      </div>
+  </div>
+    </ul>
+    
+  </div>
+</div>
+
+<script type="text/javascript">
+  setupPopSizeListener(750, 600, document.getElementById("help-popup"));
+  
+  function openHelpPopup() {
+    document.getElementById("help-popup").classList.remove("hidden");
+  }
+
+  function closeHelpPopup() {
+    document.getElementById("help-popup").classList.add("hidden");
+  }
+
 </script>
 
     <style>
