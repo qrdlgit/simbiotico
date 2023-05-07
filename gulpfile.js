@@ -29,6 +29,11 @@ function watchFiles() {
     watch('src/js/*.js', series(js));
 }
 
-exports.default = series(html, css, js, watchFiles);
+async function build() {
+    return series(html, css, js);
+}
 
+
+exports.default = series(html, css, js, watchFiles);
+exports.build = build;
 
